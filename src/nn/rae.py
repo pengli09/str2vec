@@ -357,7 +357,11 @@ if __name__ == '__main__':
   total_cost = 0
   total_instance_num = 0
   total_internal_node_num = 0
-  print '%20s,%20s,%20s' % ('all', 'avg/node', 'internal node')
+  
+  print '='*63
+  print '%20s %20s %20s' % ('all', 'avg/node', 'internal node')
+  print '-'*63
+  
   with Reader(phrases_file) as reader, Writer(output_file) as writer:
     for phrase in reader:
       instance = Instance.parse_from_str(phrase, word_vectors)
@@ -367,13 +371,15 @@ if __name__ == '__main__':
       
       internal_node_num = len(instance.words)-1
       if internal_node_num > 0:
-        print '%20.8f, %20.8f, %20d' % (cost, cost / internal_node_num, internal_node_num)
+        print '%20.8f, %20.8f, %18d' % (cost, cost / internal_node_num, internal_node_num)
       else:
-        print '%20.8f, %20.8f, %20d' % (cost, cost, 0)
+        print '%20.8f, %20.8f, %18d' % (cost, cost, 0)
       
       total_cost += cost
       total_instance_num += 1
       total_internal_node_num += internal_node_num
-      
+  
+  print '-'*63    
   print 'average reconstruction error per instance: %20.8f' % (total_cost / total_instance_num)
   print 'average reconstruction error per node: %20.8f' % (total_cost / total_internal_node_num)
+  print '='*63
