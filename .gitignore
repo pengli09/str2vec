@@ -1,0 +1,6 @@
+*.pyc
+.settings
+iterate.dat
+srilm.so
+.DS_Store
+.nfs*
