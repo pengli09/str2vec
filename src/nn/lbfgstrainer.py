@@ -201,8 +201,9 @@ def prepare_data(word_vectors=None, datafile=None):
     local_instance_strs = instance_strs[0:sizes[0]]
     del instance_strs
     
-    instances, total_internal_node = load_instances(local_instance_strs,
-                                                    word_vectors)
+    instances, internal_node_num = load_instances(local_instance_strs,
+                                                  word_vectors)
+    total_internal_node = comm.allreduce(internal_node_num, op=MPI.SUM)
     return instances, word_vectors, total_internal_node
   else:
     word_vectors = comm.bcast(root=0)
@@ -211,8 +212,9 @@ def prepare_data(word_vectors=None, datafile=None):
     local_instance_strs = comm.recv(source=0)
     comm.barrier()
     
-    instances, total_internal_node = load_instances(local_instance_strs,
-                                                    word_vectors)
+    instances, internal_node_num = load_instances(local_instance_strs,
+                                                  word_vectors)
+    total_internal_node = comm.allreduce(internal_node_num, op=MPI.SUM)
     return instances, word_vectors, total_internal_node
 
 
@@ -233,6 +235,29 @@ def load_instances(instance_strs, word_vectors):
     total_internal_node += (len(instance.words)-1) * instance.freq
   return instances, total_internal_node
 
+class ThetaSaver(object):
+  
+  def __init__(self, model_name, every=1):
+    self.idx = 1
+    self.model_name = model_name
+    self.every = every
+    
+  def __call__(self, xk):
+    if self.every == 0:
+      return;
+    
+    if self.idx % self.every == 0:
+      model = self.model_name
+      pos = model.rfind('.')
+      if pos < 0:
+        filename = '%s.iter%d' % (model, self.idx)
+      else:
+        filename = '%s.iter%d%s' % (model[0:pos], self.idx, model[pos:])
+      
+      with Writer(filename) as writer:
+        [writer.write('%20.8f\n' % v) for v in xk]
+    self.idx += 1
+
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -250,6 +275,8 @@ if __name__ == '__main__':
                       help='checking gradients or not, for dubegging purpose')
   parser.add_argument('-m', '--maxiter', type=int, default=100,
                       help='max iteration number',)
+  parser.add_argument('-e', '--every', type=int, default=0,
+                      help='dump parameters every --every iterations',)
   parser.add_argument('--seed', default=None,
                       help='random number seed for initialize random',)
   parser.add_argument('-v', '--verbose', type=int, default=0,
@@ -263,6 +290,7 @@ if __name__ == '__main__':
   save_theta0 = options.save_theta0
   checking_grad = options.checking_grad
   maxiter = options.maxiter
+  every = options.every
   _seed = options.seed
   verbose = options.verbose
   
@@ -315,7 +343,8 @@ if __name__ == '__main__':
     theta0_saving_time = timer.toc() 
     
     print >> stderr, 'optimizing...'
-    callback = None
+    
+    callback = ThetaSaver(model, every)    
     func = compute_cost_and_grad
     args = (instances, total_internal_node, word_vectors, embsize, lambda_reg)
     theta_opt = None
