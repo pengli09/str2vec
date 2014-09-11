@@ -5,11 +5,19 @@ Recursive autoencoder
 @author: lpeng
 '''
 from __future__ import division
+
+import argparse
+import logging
+from sys import stderr
+
 from numpy import arange, dot, zeros, zeros_like, tanh, concatenate
 from numpy import linalg as LA
+
 from functions import tanh_norm1_prime, sum_along_column
-import logging
-import argparse
+from vec.wordvector import WordVectors
+from ioutil import unpickle, Reader, Writer
+from nn.instance import Instance
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -326,49 +334,46 @@ class RecursiveAutoencoder(object):
       raise TypeError(msg)
     
 if __name__ == '__main__':
-  '''Debugging purpose only'''
   parser = argparse.ArgumentParser()
-  parser.add_argument('phrases', help='Format: word_index1 word_index2 ...')
-  parser.add_argument('word_vector_file')
+  parser.add_argument('phrases', help='input file, each line is a phrase')
+  parser.add_argument('word_vector_file', help='word vector file')
+  parser.add_argument('theta', help='RAE parameter file (pickled)')
+  parser.add_argument('output', help='output file')
   options = parser.parse_args()
   
   phrases_file = options.phrases
   word_vector_file = options.word_vector_file
-
-  from sys import stderr
-  from vec.wordvector import WordVectors
+  theta_file = options.theta
+  output_file = options.output
+  
   print >> stderr, 'load word vectors...'
   word_vectors = WordVectors.load_vectors(word_vector_file)
   embsize = word_vectors.embsize()
-
-  import numpy as np
-  phrases = []
-  with open(phrases_file) as phrases_reader:
-    for phrase in phrases_reader:
-      pos = phrase.find(' ||| ')
-      phrase_idx_str = phrase[0:pos]
-      phrase_idx = np.array([int(idx) for idx in phrase_idx_str.split()])
-      freq = int(phrase[pos+5:])
-      phrases.append((phrase_idx, freq))
   
-  np.random.seed(1234)
-  param_num = RecursiveAutoencoder.compute_parameter_num(embsize)
-  theta0 = np.random.random(param_num)      
-  
-  def compute_cost_and_grad(theta, phrases):  
-    rae = RecursiveAutoencoder.build(theta, embsize)
+  print >> stderr, 'load RAE parameters...'
+  theta = unpickle(theta_file)
+  rae = RecursiveAutoencoder.build(theta, embsize)
     
-    total_cost = 0
-    gradients = rae.get_zero_gradients()
-    for phrase, freq in phrases:
-      words_embedded = word_vectors[phrase]
+  total_cost = 0
+  total_instance_num = 0
+  total_internal_node_num = 0
+  print '%20s,%20s,%20s' % ('all', 'avg/node', 'internal node')
+  with Reader(phrases_file) as reader, Writer(output_file) as writer:
+    for phrase in reader:
+      instance = Instance.parse_from_str(phrase, word_vectors)
+      words_embedded = word_vectors[instance.words]
       root_node, cost = rae.forward(words_embedded)
-      total_cost += cost * freq
-      rae.backward(root_node, gradients, freq=freq)
-    
-    return total_cost, gradients.to_row_vector()
-  
-  import gradutil, sys
-  if gradutil.check_grad(compute_cost_and_grad, theta0, args=(phrases,)):
-    print >> sys.stderr, 'pass gradient checking'
-  
+      writer.write(' '.join([str(v) for v in root_node.p]))
+      
+      internal_node_num = len(instance.words)-1
+      if internal_node_num > 0:
+        print '%20.8f, %20.8f, %20d' % (cost, cost / internal_node_num, internal_node_num)
+      else:
+        print '%20.8f, %20.8f, %20d' % (cost, cost, 0)
+      
+      total_cost += cost
+      total_instance_num += 1
+      total_internal_node_num += internal_node_num
+      
+  print 'average reconstruction error per instance: %20.8f' % (total_cost / total_instance_num)
+  print 'average reconstruction error per node: %20.8f' % (total_cost / total_internal_node_num)
