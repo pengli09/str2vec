@@ -367,7 +367,9 @@ if __name__ == '__main__':
       instance = Instance.parse_from_str(phrase, word_vectors)
       words_embedded = word_vectors[instance.words]
       root_node, cost = rae.forward(words_embedded)
-      writer.write(' '.join([str(v) for v in root_node.p]))
+      vec = root_node.p.T[0] # convert n*1 vector to common vector
+      writer.write(' '.join([str(vec[i]) for i in range(vec.size)]))
+      writer.write('\n')
       
       internal_node_num = len(instance.words)-1
       if internal_node_num > 0:
