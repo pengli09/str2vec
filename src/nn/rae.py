@@ -383,5 +383,5 @@ if __name__ == '__main__':
   
   print '-'*63    
   print 'average reconstruction error per instance: %20.8f' % (total_cost / total_instance_num)
-  print 'average reconstruction error per node: %20.8f' % (total_cost / total_internal_node_num)
+  print 'average reconstruction error per node:     %20.8f' % (total_cost / total_internal_node_num)
   print '='*63
