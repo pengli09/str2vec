@@ -29,7 +29,7 @@ We use the following commandlines to install the above softwares on Ubuntu 14.04
 
 ## Recursive Autoencoders Training
 
-We have provided a toy demo on ********. We assume you have already downloaded the demo and use $DEMODIR to refer the root directory of the demo
+A toy demo is available at <http://nlp.csai.tsinghua.edu.cn/~lpeng/software/str2vec/str2vec-demo.zip>. We assume you have already downloaded the demo, and we will use $DEMODIR to refer to the root directory of the demo.
 
 ### Inputs
 
@@ -78,18 +78,15 @@ We have provided a demo training script `mpi-train.sh` as following
 	  -instances $DEMODIR/input/sample-training-file.txt\
 	  -model $DEMODIR/output/sample-training-file.mpi-$N.model.gz\
 	  -word_vector $DEMODIR/input/sample-word-vectors-trained-by-word2vec.txt\
-	  -lambda_reg 0.01\
+	  -lambda_reg 0.15\
 	  -m 200
-
-
-**************处理lambda_reg
 
 You can use `./mpi-train.sh 2` to start 2 processes to train the RAE. The output looks like
 
-	Instances file: /Users/lpeng/exp/str2vec/demo/input/sample-training-file.txt
-	Model file: /Users/lpeng/exp/str2vec/demo/output/sample-training-file.mpi-2.model.gz
-	Word vector file: /Users/lpeng/exp/str2vec/demo/input/sample-word-vectors-trained-by-word2vec.txt
-	lambda_reg: 0.010000000000000000
+	Instances file: /Users/lpeng/exp/str2vec/str2vec-demo/input/sample-training-file.txt
+	Model file: /Users/lpeng/exp/str2vec/str2vec-demo/output/sample-training-file.mpi-2.model.gz
+	Word vector file: /Users/lpeng/exp/str2vec/str2vec-demo/input/sample-word-vectors-trained-by-word2vec.txt
+	lambda_reg: 0.149999999999999994
 	Max iterations: 200
 	
 	load word vectors...
@@ -98,17 +95,19 @@ You can use `./mpi-train.sh 2` to start 2 processes to train the RAE. The output
 	seed: None
 	shape of theta0 430
 	optimizing...
-	saving parameters to /Users/lpeng/exp/str2vec/demo/output/sample-training-file.mpi-2.model.gz
+	saving parameters to /Users/lpeng/exp/str2vec/str2vec-demo/output/sample-training-file.mpi-2.model.gz
 	Init. theta0  :       0.00 s
-	Optimizing    :       3.16 s
+	Optimizing    :       1.67 s
 	Saving theta  :       0.01 s
 	Done!
+
 	
 There are 5 parameters for the python program `$PYTHONPATH/nn/lbfgstrainer.py`
 
 * `-instances`: the training phrase file
 * `-model`: output model file
 * `-word_vector`: word vectors file
+* `-lambda_reg`: the training objective function of our toolkit is $$J(\theta)=AverageReconstructionError+\frac{\lambda}{2}||\theta||^2$$ and `-lambda_reg` is the value of $$$\lambda$$$. Its default value is 0.15.
 * `-m`: max number of iterations
 
 ### Output

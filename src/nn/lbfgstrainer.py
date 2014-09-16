@@ -267,7 +267,7 @@ if __name__ == '__main__':
                       help='model name')
   parser.add_argument('-word_vector', required=True,
                       help='word vector file',)
-  parser.add_argument('-lambda_reg', type=float, required=True,
+  parser.add_argument('-lambda_reg', type=float, default=0.15,
                       help='weight of the regularizer')
   parser.add_argument('--save-theta0', action='store_true',
                       help='save theta0 or not, for dubegging purpose')
