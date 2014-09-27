@@ -14,7 +14,7 @@ For more information about recursive auto encoders, please refer to:
 
 Python is easy to install. open-mpi is usually available on most Linux platforms. Numpy, Scipy and mpi4py are available from pip. Alternatively, you can install all these softwares from source code if you like or you do care about efficiency.
 
-We use the following commandlines to install the above softwares on Ubuntu 14.04:
+We use the following commands to install the above softwares on Ubuntu 14.04:
 
 	# install python, python development files and pip
 	sudo apt-get install python python-dev python-pip
