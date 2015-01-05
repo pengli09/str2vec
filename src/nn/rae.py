@@ -160,62 +160,124 @@ class RecursiveAutoencoder(object):
       value2: reconstruction_error
     '''
     
-    sent_length = words_embedded.shape[1]
+    words_num = words_embedded.shape[1]
     
-    tree_node_indices = arange(sent_length)
-    tree_nodes = [None]*(2*sent_length - 1)
-    tree_nodes[0:sent_length] = [LeafNode(i, words_embedded[:, (i,)]) 
-                                        for i in range(sent_length)]
+    tree_nodes = [None]*(2*words_num - 1)
+    tree_nodes[0:words_num] = [LeafNode(i, words_embedded[:, (i,)]) 
+                                        for i in range(words_num)]
     
     reconstruction_error = 0
+    
     # build a tree greedily
-    for j in range(sent_length-1):
-      words_num = words_embedded.shape[1]
-      c1 = words_embedded[:, arange(words_num-1)]
-      c2 = words_embedded[:, arange(1, words_num)]
-      
-      p_unnormalized = self.f(dot(self.Wi1, c1) + dot(self.Wi2, c2)\
+    # initialize reconstruction errors
+    c1 = words_embedded[:, arange(words_num-1)]
+    c2 = words_embedded[:, arange(1, words_num)]
+    p_unnormalized = self.f(dot(self.Wi1, c1) + dot(self.Wi2, c2)\
                                + self.bi[:, zeros(words_num-1, dtype=int)])
-      p = p_unnormalized / LA.norm(p_unnormalized, axis=0)
+    p = p_unnormalized / LA.norm(p_unnormalized, axis=0)
     
-      y1_unnormalized = self.f(dot(self.Wo1, p)\
+    y1_unnormalized = self.f(dot(self.Wo1, p)\
                                + self.bo1[:, zeros(words_num-1, dtype=int)])
-      y1 = y1_unnormalized / LA.norm(y1_unnormalized, axis=0)
+    y1 = y1_unnormalized / LA.norm(y1_unnormalized, axis=0)
   
-      y2_unnormalized = self.f(dot(self.Wo2, p)\
+    y2_unnormalized = self.f(dot(self.Wo2, p)\
                                + self.bo2[:, zeros(words_num-1, dtype=int)])
-      y2 = y2_unnormalized / LA.norm(y2_unnormalized, axis=0)
+    y2 = y2_unnormalized / LA.norm(y2_unnormalized, axis=0)
     
-      y1c1 = y1 - c1
-      y2c2 = y2 - c2
+    y1c1 = y1 - c1
+    y2c2 = y2 - c2
     
-      J = 1/2 * (sum_along_column(y1c1**2) + sum_along_column(y2c2**2))
+    J = 1/2 * (sum_along_column(y1c1**2) + sum_along_column(y2c2**2))
     
-      # finding the pair with smallest reconstruction error for constructing tree
+    # initialize candidate internal nodes
+    candidate_nodes = []
+    for i in range(words_num-1):
+      left_child = tree_nodes[i]
+      right_child = tree_nodes[i+1]
+      node = InternalNode(-i-1, left_child, right_child,
+                          p[:, (i,)], p_unnormalized[:, (i,)],
+                          y1c1[:, (i,)], y2c2[:, (i,)],
+                          y1_unnormalized[:, (i,)], 
+                          y2_unnormalized[:, (i,)])
+      candidate_nodes.append(node)
+    debugging_cand_node_index = words_num
+      
+    
+    for j in range(words_num-1):
+      # find the smallest reconstruction error
       J_minpos = J.argmin()
       J_min = J[J_minpos]
       reconstruction_error += J_min
-    
-      left_child = tree_nodes[tree_node_indices[J_minpos]]
-      right_child = tree_nodes[tree_node_indices[J_minpos+1]]
-      y1_minus_c1 = y1c1[:, (J_minpos,)]
-      y2_minus_c2 = y2c2[:, (J_minpos,)]
-      y1_unnormalized_minpos = y1_unnormalized[:, (J_minpos,)]
-      y2_unnormalized_minpos = y2_unnormalized[:, (J_minpos,)]
-      node = InternalNode(sent_length+j, left_child, right_child,
-                          p[:, (J_minpos,)], p_unnormalized[:, (J_minpos,)],
-                          y1_minus_c1, y2_minus_c2,
-                          y1_unnormalized_minpos, y2_unnormalized_minpos)
-      tree_nodes[sent_length+j] = node
       
-      valid_indices = [i for i in range(sent_length-j) if i != J_minpos+1]
-      words_embedded = words_embedded[:, valid_indices] 
-      words_embedded[:, (J_minpos,)] = p[:, (J_minpos,)]
+      node = candidate_nodes[J_minpos]
+      node.index = words_num + j # for dubugging
+      tree_nodes[words_num+j] = node
   
-      tree_node_indices = tree_node_indices[valid_indices]
-      tree_node_indices[J_minpos] = sent_length + j
+      # update reconstruction errors
+      if J_minpos+1 < len(candidate_nodes):
+        c1 = node
+        c2 = candidate_nodes[J_minpos+1].right_child
+        right_cand_node, right_J = self.__build_internal_node(c1, c2)
+        
+        right_cand_node.index = -debugging_cand_node_index
+        debugging_cand_node_index += 1
+        candidate_nodes[J_minpos+1] = right_cand_node
+        
+        J[J_minpos+1] = right_J
+        
+      if J_minpos-1 >= 0:
+        c1 = candidate_nodes[J_minpos-1].left_child
+        c2 = node
+        left_cand_node, left_J = self.__build_internal_node(c1, c2)
+        
+        left_cand_node.index = -debugging_cand_node_index
+        debugging_cand_node_index += 1
+        candidate_nodes[J_minpos-1] = left_cand_node
+        J[J_minpos-1] = left_J
       
+      valid_indices = [i for i in range(words_num-1-j) if i != J_minpos]
+      J = J[valid_indices]
+      candidate_nodes = [candidate_nodes[k] for k in valid_indices]
+     
     return tree_nodes[-1], reconstruction_error 
+  
+  def __build_internal_node(self, c1_node, c2_node):
+    '''Build a new internal node which represents the representation of 
+    c1_node.p and c2_node.p computed using autoencoder  
+    
+    Args:
+      c1_node: left node
+      c2_node: right node
+      
+    Returns:
+      value1: a new internal node 
+      value2: reconstruction error, a scalar
+    
+    ''' 
+    c1 = c1_node.p
+    c2 = c2_node.p
+    p_unnormalized = self.f(dot(self.Wi1, c1) + dot(self.Wi2, c2) + self.bi)
+    p = p_unnormalized / LA.norm(p_unnormalized, axis=0)
+    
+    y1_unnormalized = self.f(dot(self.Wo1, p) + self.bo1)
+    y1 = y1_unnormalized / LA.norm(y1_unnormalized, axis=0)
+  
+    y2_unnormalized = self.f(dot(self.Wo2, p) + self.bo2)
+    y2 = y2_unnormalized / LA.norm(y2_unnormalized, axis=0)
+    
+    y1c1 = y1 - c1
+    y2c2 = y2 - c2
+    
+    node = InternalNode(-1, c1_node, c2_node,
+                        p, p_unnormalized,
+                        y1c1, y2c2,
+                        y1_unnormalized, y2_unnormalized)
+
+    reconstruction_error = sum_along_column(y1c1**2) + sum_along_column(y2c2**2)
+    reconstruction_error = 0.5*reconstruction_error[0]
+    
+    return node, reconstruction_error 
+  
   
   class Gradients(object):
     '''Class for storing gradients.
