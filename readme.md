@@ -2,7 +2,11 @@
 
 This work was done while Peng Li was a Ph.D. student of Tsinghua University.
 
-str2vec is a toolkit for computing vector-space representations for variable-length phrases using recursive autoencoders (RAE). In this document, we demostrate
+str2vec is a toolkit for computing vector-space representations for variable-length phrases using recursive autoencoders (RAE, the following figure is a RAE example).
+
+![image](https://github.com/pengli09/str2vec/raw/master/images/rae.png)
+
+In this document, we demostrate
 
 * How to train RAEs in an unsupervised and parallelized manner;
 * And how to compute vector-space representations for phrases once the RAE is trained.
@@ -30,7 +34,7 @@ We use the following commands to install the above softwares on Ubuntu 14.04:
 
 ## Recursive Autoencoders Training
 
-A toy demo is available at <http://nlp.csai.tsinghua.edu.cn/~lpeng/software/str2vec/str2vec-demo.zip>. We assume you have already downloaded the demo, and we will use $DEMODIR to refer to the root directory of the demo.
+A toy demo is placed under the folder `demo-data`. We assume you have already unpack the demo data and use $DEMODIR to refer to the root directory of the demo.
 
 ### Inputs
 
