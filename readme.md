@@ -1,5 +1,6 @@
 #str2vec
 
+This work was done while Peng Li was a Ph.D. student of Tsinghua University.
 
 str2vec is a toolkit for computing vector-space representations for variable-length phrases using recursive autoencoders (RAE). In this document, we demostrate
 
@@ -161,3 +162,6 @@ The phrase vectors will be output into the `output file`, and you will see the f
 	average reconstruction error per instance:           3.44519854
 	average reconstruction error per node:               1.25279947
 	===============================================================
+	
+## Reference
+> Peng Li, Yang Liu, Maosong Sun. <i>Recursive Autoencoders for ITG-based Translation</i>. Proc. of EMNLP 2013: Conference on Empirical Methods in Natural Language Processing, Seattle, Washington, USA, 2013, pp. 567-577.
