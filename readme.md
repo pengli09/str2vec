@@ -14,8 +14,17 @@ In this document, we demostrate
 For more information about recursive auto encoders, please refer to:
 > Richard Socher, Jeffrey Pennington, Eric Huang, Andrew Y. Ng, and Christopher D. Manning. <i>Semi-Supervised Recursive Autoencoders for Predicting Sentiment Distributions</i>. Proc. of Conference on Empirical Methods in Natural Language Processing (EMNLP 2011), pp. 151-161.
 
-## PrerequisitesThis toolkit has been tested on Ubuntu 14.04 and Mac OS 10.9. But it should work on other platforms which supported by the following softwares:* Python 2.7.8 or later (Python 3.x is not supported)* open-mpi 1.8.1 or later (other MPI implementation supported by mpi4py should also be OK)* Numpy 1.8.1 or later* Scipy 0.14.0 or later* mpi4py 1.3.1 or later
+## Prerequisites
 
+This toolkit has been tested on Ubuntu 14.04 and Mac OS 10.9. But it should work on other platforms which supported by the following softwares:
+
+* Python 2.7.8 or later (Python 3.x is not supported)
+* open-mpi 1.8.1 or later (other MPI implementation supported by mpi4py should also be OK)
+* Numpy 1.8.1 or later
+* Scipy 0.14.0 or later
+* mpi4py 1.3.1 or later
+
+Note: we find some API(s) of mpi4py or open-mpi had been changed in recent versions. If you meet errors such as "TypeError: bcast() takes at least 1 positional argument (0 given)", please fall back to the versions as above.
 
 Python is easy to install. open-mpi is usually available on most Linux platforms. Numpy, Scipy and mpi4py are available from pip. Alternatively, you can install all these softwares from source code if you like or you do care about efficiency.
 
